@@ -2,14 +2,14 @@ import datetime
 
 import click
 
-import requests
 import time
 from zign.api import get_named_token
-from clickclick import error, AliasedGroup, print_table, OutputFormat
+from clickclick import AliasedGroup, print_table, OutputFormat
 
 import fullstop
 import stups_cli.config
 from fullstop.api import request
+from fullstop.time import normalize_time
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -49,54 +49,39 @@ def cli(ctx):
     ctx.obj = stups_cli.config.load_config('fullstop')
 
 
-@cli.command()
-@click.option('--url', help='Fullstop URL', metavar='URI')
-@click.pass_obj
-def login(obj, url):
-    '''Login to fullstop.'''
-    config = obj
-
-    url = url or config.get('url')
-
-    while not url:
-        url = click.prompt('Please enter the Fullstop URL')
-        if not url.startswith('http'):
-            url = 'https://{}'.format(url)
-
-        try:
-            requests.get(url, timeout=5, allow_redirects=False)
-        except:
-            error('Could not reach {}'.format(url))
-            url = None
-
-        config['url'] = url
-
-    get_token()
-
-    stups_cli.config.store_config(config, 'fullstop')
-
-
 def get_token():
     try:
         token = get_named_token(['uid'], None, 'fullstop', None, None)
     except:
-        raise click.UsageError('No valid OAuth token named "fullstop" found. Please use "fullstop login".')
+        raise click.UsageError('No valid OAuth token named "fullstop" found. Please use "zign token -n fullstop".')
     return token
+
+
+def parse_since(s):
+    return normalize_time(s, past=True).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 
 @cli.command()
 @output_option
 @click.option('--accounts')
-@click.option('--since')
+@click.option('-s', '--since', default='1d')
+@click.option('--severity')
+@click.option('-t', '--type')
+@click.option('-l', '--limit', help='Limit number of results', type=int, default=20)
 @click.pass_obj
-def violations(config, output, accounts, since):
+def violations(config, output, since, limit, **kwargs):
     '''Show violations'''
+    url = config.get('url')
+    if not url:
+        raise click.ClickException('Missing configuration URL. Please run "stups configure".')
+
     token = get_token()
 
-    params = {'size': 100}
-    params['accounts'] = accounts
-    params['since'] = since
-    r = request(config.get('url'), '/api/violations', token['access_token'], params=params)
+    params = {'size': limit, 'sort': 'id,DESC'}
+    params['since'] = parse_since(since)
+    params.update(kwargs)
+    r = request(url, '/api/violations', token['access_token'], params=params)
+    r.raise_for_status()
     data = r.json()
 
     rows = []
@@ -105,9 +90,13 @@ def violations(config, output, accounts, since):
         row['created_time'] = parse_time(row['created'])
         row['meta_info'] = (row['meta_info'] or '').replace('\n', ' ')
         rows.append(row)
-    print(rows)
+
+    # we get the newest violations first, but we want to print them in order
+    rows.reverse()
+
     with OutputFormat(output):
-        print_table(['account_id', 'region', 'violation_type', 'instance_id', 'meta_info', 'created_time'], rows)
+        print_table(['account_id', 'region', 'violation_type', 'instance_id', 'meta_info', 'comment', 'created_time'],
+                    rows, titles={'created_time': 'Created'})
 
 
 def main():
