@@ -1,5 +1,4 @@
 import datetime
-import os
 
 import click
 
@@ -46,23 +45,18 @@ def print_version(ctx, param, value):
 @click.option('-V', '--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True,
               help='Print the current version number and exit.')
 @click.pass_context
-def cli(ctx, config_file):
+def cli(ctx):
     ctx.obj = stups_cli.config.load_config('fullstop')
 
 
 @cli.command()
-@click.option('--url', help='Pier One URL', metavar='URI')
-@click.option('--realm', help='Use custom OAuth2 realm', metavar='NAME')
-@click.option('-n', '--name', help='Custom token name (will be stored)', metavar='TOKEN_NAME', default='fullstop')
-@click.option('-U', '--user', help='Username to use for authentication', envvar='fullstop_USER', metavar='NAME')
-@click.option('-p', '--password', help='Password to use for authentication', envvar='fullstop_PASSWORD', metavar='PWD')
+@click.option('--url', help='Fullstop URL', metavar='URI')
 @click.pass_obj
-def login(obj, url, realm, name, user, password):
+def login(obj, url):
     '''Login to fullstop.'''
     config = obj
 
     url = url or config.get('url')
-    user = user or os.getenv('USER')
 
     while not url:
         url = click.prompt('Please enter the Fullstop URL')
@@ -70,12 +64,14 @@ def login(obj, url, realm, name, user, password):
             url = 'https://{}'.format(url)
 
         try:
-            requests.get(url, timeout=5)
+            requests.get(url, timeout=5, allow_redirects=False)
         except:
             error('Could not reach {}'.format(url))
             url = None
 
         config['url'] = url
+
+    get_token()
 
     stups_cli.config.store_config(config, 'fullstop')
 
@@ -90,16 +86,28 @@ def get_token():
 
 @cli.command()
 @output_option
+@click.option('--accounts')
+@click.option('--since')
 @click.pass_obj
-def violations(config, output):
+def violations(config, output, accounts, since):
     '''Show violations'''
     token = get_token()
 
-    r = request(config.get('url'), '/api/violations', token['access_token'])
-    rows = [{'name': name} for name in sorted(r.json())]
-    with OutputFormat(output):
-        print_table(['name'], rows)
+    params = {'size': 100}
+    params['accounts'] = accounts
+    params['since'] = since
+    r = request(config.get('url'), '/api/violations', token['access_token'], params=params)
+    data = r.json()
 
+    rows = []
+    for row in data['content']:
+        row['violation_type'] = row['violation_type']['id']
+        row['created_time'] = parse_time(row['created'])
+        row['meta_info'] = (row['meta_info'] or '').replace('\n', ' ')
+        rows.append(row)
+    print(rows)
+    with OutputFormat(output):
+        print_table(['account_id', 'region', 'violation_type', 'instance_id', 'meta_info', 'created_time'], rows)
 
 
 def main():
