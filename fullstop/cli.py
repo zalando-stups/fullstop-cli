@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import click
 
@@ -50,8 +51,9 @@ def cli(ctx):
 
 
 def get_token():
+    user = os.getenv('USER')
     try:
-        token = get_named_token(['uid'], None, 'fullstop', None, None)
+        token = get_named_token(['uid'], None, 'fullstop', user, None)
     except:
         raise click.UsageError('No valid OAuth token named "fullstop" found. Please use "zign token -n fullstop".')
     return token
