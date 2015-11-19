@@ -3,7 +3,7 @@ import datetime
 import click
 
 import time
-from zign.api import get_named_token
+import zign.api
 from clickclick import AliasedGroup, print_table, OutputFormat
 
 import fullstop
@@ -51,9 +51,9 @@ def cli(ctx):
 
 def get_token():
     try:
-        token = get_named_token(['uid'], None, 'fullstop', None, None)
-    except:
-        raise click.UsageError('No valid OAuth token named "fullstop" found. Please use "zign token -n fullstop".')
+        token = zign.api.get_token('fullstop', ['uid'])
+    except Exception as e:
+        raise click.UsageError(str(e))
     return token
 
 
@@ -80,7 +80,7 @@ def violations(config, output, since, limit, **kwargs):
     params = {'size': limit, 'sort': 'id,DESC'}
     params['since'] = parse_since(since)
     params.update(kwargs)
-    r = request(url, '/api/violations', token['access_token'], params=params)
+    r = request(url, '/api/violations', token, params=params)
     r.raise_for_status()
     data = r.json()
 
