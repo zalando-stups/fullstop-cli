@@ -63,11 +63,11 @@ def parse_since(s):
 
 @cli.command()
 @output_option
-@click.option('--accounts')
-@click.option('-s', '--since', default='1d')
+@click.option('--accounts', metavar='ACCOUNT_IDS', help='AWS account IDs to filter for')
+@click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
 @click.option('--severity')
-@click.option('-t', '--type')
-@click.option('-l', '--limit', help='Limit number of results', type=int, default=20)
+@click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
+@click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
 @click.pass_obj
 def violations(config, output, since, limit, **kwargs):
     '''Show violations'''
