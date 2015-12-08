@@ -4,11 +4,11 @@ import click
 
 import time
 import zign.api
-from clickclick import AliasedGroup, print_table, OutputFormat
+from clickclick import AliasedGroup, print_table, OutputFormat, Action
 
 import fullstop
 import stups_cli.config
-from fullstop.api import request
+from fullstop.api import request, session
 from fullstop.time import normalize_time
 
 
@@ -61,7 +61,7 @@ def parse_since(s):
     return normalize_time(s, past=True).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 
-@cli.command()
+@cli.command('list-violations')
 @output_option
 @click.option('--accounts', metavar='ACCOUNT_IDS', help='AWS account IDs to filter for')
 @click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
@@ -69,8 +69,8 @@ def parse_since(s):
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
 @click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
 @click.pass_obj
-def violations(config, output, since, limit, **kwargs):
-    '''Show violations'''
+def list_violations(config, output, since, limit, **kwargs):
+    '''List violations'''
     url = config.get('url')
     if not url:
         raise click.ClickException('Missing configuration URL. Please run "stups configure".')
@@ -97,6 +97,43 @@ def violations(config, output, since, limit, **kwargs):
     with OutputFormat(output):
         print_table(['account_id', 'region', 'violation_type', 'instance_id', 'meta_info', 'comment', 'created_time'],
                     rows, titles={'created_time': 'Created'})
+
+
+@cli.command('resolve-violations')
+@click.option('--accounts', metavar='ACCOUNT_IDS', help='AWS account IDs to filter for')
+@click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
+@click.option('--severity')
+@click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
+@click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
+@click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
+@click.argument('comment')
+@click.pass_obj
+def resolve_violations(config, comment, since, region, limit, **kwargs):
+    '''Resolve violations'''
+    url = config.get('url')
+    if not url:
+        raise click.ClickException('Missing configuration URL. Please run "stups configure".')
+
+    if not kwargs['accounts'] and not kwargs['type'] and not region:
+        raise click.UsageError('At least one of --accounts, --type or --region must be specified')
+
+    token = get_token()
+
+    params = {'size': limit, 'sort': 'id,DESC'}
+    params['since'] = parse_since(since)
+    params.update(kwargs)
+    r = request(url, '/api/violations', token, params=params)
+    r.raise_for_status()
+    data = r.json()
+
+    for row in data['content']:
+        if region and row['region'] != region:
+            continue
+        with Action('Resolving violation {}/{} {} {}..'.format(row['account_id'], row['region'],
+                    row['violation_type']['id'], row['id'])):
+            r = session.post(url + '/api/violations/{}/resolution'.format(row['id']), data=comment,
+                             headers={'Authorization': 'Bearer {}'.format(token)})
+            r.raise_for_status()
 
 
 def main():
