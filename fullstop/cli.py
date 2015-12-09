@@ -90,7 +90,8 @@ def types(config, output):
 
 @cli.command('list-violations')
 @output_option
-@click.option('--accounts', metavar='ACCOUNT_IDS', help='AWS account IDs to filter for')
+@click.option('--accounts', metavar='ACCOUNT_IDS',
+              help='AWS account IDs to filter for (default: your configured accounts)')
 @click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
 @click.option('--severity')
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
@@ -101,6 +102,8 @@ def list_violations(config, output, since, limit, **kwargs):
     url = config.get('url')
     if not url:
         raise click.ClickException('Missing configuration URL. Please run "stups configure".')
+
+    kwargs['accounts'] = kwargs.get('accounts') or config.get('accounts')
 
     token = get_token()
 
@@ -127,7 +130,8 @@ def list_violations(config, output, since, limit, **kwargs):
 
 
 @cli.command('resolve-violations')
-@click.option('--accounts', metavar='ACCOUNT_IDS', help='AWS account IDs to filter for')
+@click.option('--accounts', metavar='ACCOUNT_IDS',
+              help='AWS account IDs to filter for (default: your configured accounts)')
 @click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
 @click.option('--severity')
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
@@ -140,6 +144,8 @@ def resolve_violations(config, comment, since, region, limit, **kwargs):
     url = config.get('url')
     if not url:
         raise click.ClickException('Missing configuration URL. Please run "stups configure".')
+
+    kwargs['accounts'] = kwargs.get('accounts') or config.get('accounts')
 
     if not kwargs['accounts'] and not kwargs['type'] and not region:
         raise click.UsageError('At least one of --accounts, --type or --region must be specified')
