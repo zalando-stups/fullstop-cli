@@ -95,9 +95,11 @@ def types(config, output):
 @click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
 @click.option('--severity')
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
+@click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
 @click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
+@click.option('--all', is_flag=True, help='Show resolved violations too')
 @click.pass_obj
-def list_violations(config, output, since, limit, **kwargs):
+def list_violations(config, output, since, region, limit, all, **kwargs):
     '''List violations'''
     url = config.get('url')
     if not url:
@@ -116,6 +118,10 @@ def list_violations(config, output, since, limit, **kwargs):
 
     rows = []
     for row in data['content']:
+        if region and row['region'] != region:
+            continue
+        if row['comment'] and not all:
+            continue
         row['violation_type'] = row['violation_type']['id']
         row['created_time'] = parse_time(row['created'])
         row['meta_info'] = (row['meta_info'] or '').replace('\n', ' ')
@@ -161,6 +167,9 @@ def resolve_violations(config, comment, since, region, limit, **kwargs):
 
     for row in data['content']:
         if region and row['region'] != region:
+            continue
+        if row['comment']:
+            # already resolved, skip
             continue
         with Action('Resolving violation {}/{} {} {}..'.format(row['account_id'], row['region'],
                     row['violation_type']['id'], row['id'])):
