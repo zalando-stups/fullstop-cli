@@ -61,6 +61,33 @@ def parse_since(s):
     return normalize_time(s, past=True).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 
+@cli.command('types')
+@output_option
+@click.pass_obj
+def types(config, output):
+    '''List violation types'''
+    url = config.get('url')
+    if not url:
+        raise click.ClickException('Missing configuration URL. Please run "stups configure".')
+
+    token = get_token()
+
+    r = request(url, '/api/violation-types', token)
+    r.raise_for_status()
+    data = r.json()
+
+    rows = []
+    for row in data:
+        row['created_time'] = parse_time(row['created'])
+        rows.append(row)
+
+    rows.sort(key=lambda r: r['id'])
+
+    with OutputFormat(output):
+        print_table(['id', 'violation_severity', 'created_time', 'help_text'],
+                    rows, titles={'created_time': 'Created', 'violation_severity': 'Sev.'})
+
+
 @cli.command('list-violations')
 @output_option
 @click.option('--accounts', metavar='ACCOUNT_IDS', help='AWS account IDs to filter for')
