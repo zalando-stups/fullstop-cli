@@ -4,7 +4,7 @@ import click
 
 import time
 import zign.api
-from clickclick import AliasedGroup, print_table, OutputFormat, Action
+from clickclick import AliasedGroup, print_table, OutputFormat, Action, UrlType
 
 import fullstop
 import stups_cli.config
@@ -59,6 +59,19 @@ def get_token():
 
 def parse_since(s):
     return normalize_time(s, past=True).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
+
+@cli.command('configure')
+@click.pass_obj
+def configure(config):
+    '''Configure fullstop. CLI'''
+    url = click.prompt('Fullstop URL', default=config.get('url'), type=UrlType())
+    accounts = click.prompt('AWS account IDs (comma separated)', default=config.get('accounts'))
+
+    config = {'url': url, 'accounts': accounts}
+
+    with Action('Storing configuration..'):
+        stups_cli.config.store_config(config, 'fullstop')
 
 
 @cli.command('types')
