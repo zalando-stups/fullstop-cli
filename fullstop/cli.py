@@ -165,7 +165,7 @@ def list_violations(config, output, since, region, meta, limit, all, **kwargs):
     token = get_token()
 
     params = {'size': limit, 'sort': 'id,DESC'}
-    params['since'] = parse_since(since)
+    params['from'] = parse_since(since)
     params.update(kwargs)
     r = request(url, '/api/violations', token, params=params)
     r.raise_for_status()
@@ -217,7 +217,7 @@ def resolve_violations(config, comment, since, region, meta, limit, **kwargs):
     token = get_token()
 
     params = {'size': limit, 'sort': 'id,DESC'}
-    params['since'] = parse_since(since)
+    params['from'] = parse_since(since)
     params.update(kwargs)
     r = request(url, '/api/violations', token, params=params)
     r.raise_for_status()
