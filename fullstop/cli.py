@@ -131,6 +131,8 @@ def meta_matches(meta_info, meta_filter: str):
     if not meta_info:
         return False
 
+    if not isinstance(meta_info, dict):
+        return False
     if not isinstance(meta_filter, dict):
         return False
 
