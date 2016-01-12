@@ -2,6 +2,7 @@ import datetime
 
 import click
 import json
+import yaml
 
 import time
 import zign.api
@@ -142,6 +143,22 @@ def meta_matches(meta_info, meta_filter: str):
     return True
 
 
+def format_meta_info(meta_info):
+    '''
+    >>> format_meta_info(None)
+    ''
+    >>> format_meta_info({1: 2})
+    '{1: 2}'
+    >>> format_meta_info('foo')
+    'foo'
+    '''
+    if not meta_info:
+        return ''
+    if isinstance(meta_info, str):
+        return meta_info
+    return yaml.safe_dump(meta_info).strip()
+
+
 @cli.command('list-violations')
 @output_option
 @click.option('--accounts', metavar='ACCOUNT_IDS',
@@ -181,7 +198,7 @@ def list_violations(config, output, since, region, meta, limit, all, **kwargs):
             continue
         row['violation_type'] = row['violation_type']['id']
         row['created_time'] = parse_time(row['created'])
-        row['meta_info'] = (row['meta_info'] or '').replace('\n', ' ')
+        row['meta_info'] = format_meta_info(row['meta_info'])
         rows.append(row)
 
     # we get the newest violations first, but we want to print them in order
