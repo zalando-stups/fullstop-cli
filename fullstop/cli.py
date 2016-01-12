@@ -148,7 +148,7 @@ def format_meta_info(meta_info):
     >>> format_meta_info(None)
     ''
     >>> format_meta_info({1: 2})
-    '{1: 2}'
+    '1: 2'
     >>> format_meta_info('foo')
     'foo'
     '''
@@ -156,7 +156,7 @@ def format_meta_info(meta_info):
         return ''
     if isinstance(meta_info, str):
         return meta_info
-    return yaml.safe_dump(meta_info).strip()
+    return yaml.safe_dump(meta_info).strip('{} \n')
 
 
 @cli.command('list-violations')
