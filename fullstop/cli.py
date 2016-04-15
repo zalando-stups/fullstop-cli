@@ -1,18 +1,16 @@
 import datetime
+import json
+import re
+import time
 
 import click
-import json
-import yaml
-
-import time
-import zign.api
-from clickclick import AliasedGroup, print_table, OutputFormat, Action, UrlType
-
 import fullstop
 import stups_cli.config
+import yaml
+import zign.api
+from clickclick import Action, AliasedGroup, OutputFormat, UrlType, print_table
 from fullstop.api import request, session
 from fullstop.time import normalize_time
-
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -143,6 +141,35 @@ def meta_matches(meta_info, meta_filter: str):
     return True
 
 
+def meta_matches_re(meta_info: str, regular_exp: str):
+    '''
+    >>> meta_matches_re(None, None)
+    False
+    >>> meta_matches_re(None, 'abc')
+    False
+    >>> meta_matches_re({}, 'abc')
+    False
+    >>> meta_matches_re('{"1": "2"}', '^\{.*\}')
+    True
+    >>> meta_matches_re('{"app_name": "foobar"}', '.*app_name\\"\: \\"foobar.*')
+    True
+    >>> meta_matches_re('{"app_name": "foobar"}', 'nomatch')
+    False
+    >>> meta_matches_re('app_name, foobar', 'app_name')
+    True
+    '''
+    if not meta_info:
+        return False
+
+    if not isinstance(meta_info, str):
+        return False
+
+    if not regular_exp:
+        return True
+
+    return re.match(regular_exp, meta_info) is not None
+
+
 def format_meta_info(meta_info):
     '''
     >>> format_meta_info(None)
@@ -168,10 +195,11 @@ def format_meta_info(meta_info):
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
 @click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
 @click.option('-m', '--meta', metavar='KEY=VAL', help='Filter by meta info (k1=v1,k2=v2,..)')
+@click.option('-x', '--remeta', metavar='REGEX', help='Filter by meta info by regular expression')
 @click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
 @click.option('--all', is_flag=True, help='Show resolved violations too')
 @click.pass_obj
-def list_violations(config, output, since, region, meta, limit, all, **kwargs):
+def list_violations(config, output, since, region, meta, remeta, limit, all, **kwargs):
     '''List violations'''
     url = config.get('url')
     if not url:
@@ -196,6 +224,8 @@ def list_violations(config, output, since, region, meta, limit, all, **kwargs):
             continue
         if meta and not meta_matches(row['meta_info'], meta):
             continue
+        if remeta and not meta_matches_re(format_meta_info(row['meta_info']), remeta):
+            continue
         row['violation_type'] = row['violation_type']['id']
         row['created_time'] = parse_time(row['created'])
         row['meta_info'] = format_meta_info(row['meta_info'])
@@ -217,10 +247,11 @@ def list_violations(config, output, since, region, meta, limit, all, **kwargs):
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
 @click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
 @click.option('-m', '--meta', metavar='KEY=VAL', help='Filter by meta info (k1=v1,k2=v2,..)')
+@click.option('-x', '--remeta', metavar='REGEX', help='Filter by meta info by regular expression')
 @click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
 @click.argument('comment')
 @click.pass_obj
-def resolve_violations(config, comment, since, region, meta, limit, **kwargs):
+def resolve_violations(config, comment, since, region, meta, remeta, limit, **kwargs):
     '''Resolve violations'''
     url = config.get('url')
     if not url:
@@ -244,6 +275,8 @@ def resolve_violations(config, comment, since, region, meta, limit, **kwargs):
         if region and row['region'] != region:
             continue
         if meta and not meta_matches(row['meta_info'], meta):
+            continue
+        if remeta and not meta_matches_re(format_meta_info(row['meta_info']), remeta):
             continue
         if row['comment']:
             # already resolved, skip
