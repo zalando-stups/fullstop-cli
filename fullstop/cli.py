@@ -235,7 +235,14 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
     rows.reverse()
 
     with OutputFormat(output):
-        print_table(['account_id', 'region', 'violation_type', 'instance_id', 'meta_info', 'comment', 'created_time'],
+        print_table(['account_id',
+                     'region',
+                     'id',
+                     'violation_type',
+                     'instance_id',
+                     'meta_info',
+                     'comment',
+                     'created_time'],
                     rows, titles={'created_time': 'Created'})
 
 
@@ -243,6 +250,8 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
 @click.option('--accounts', metavar='ACCOUNT_IDS',
               help='AWS account IDs to filter for (default: your configured accounts)')
 @click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
+@click.option('-i', '--violation-ids', metavar='VIOLATION_ID', help='resolve this specific violations, ' +
+                                                                    'multiple ID\'s comma seperated')
 @click.option('--severity')
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
 @click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
@@ -251,7 +260,7 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
 @click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
 @click.argument('comment')
 @click.pass_obj
-def resolve_violations(config, comment, since, region, meta, remeta, limit, **kwargs):
+def resolve_violations(config, comment, since, region, meta, remeta, limit, violation_ids, **kwargs):
     '''Resolve violations'''
     url = config.get('url')
     if not url:
@@ -267,9 +276,17 @@ def resolve_violations(config, comment, since, region, meta, remeta, limit, **kw
     params = {'size': limit, 'sort': 'id,DESC'}
     params['from'] = parse_since(since)
     params.update(kwargs)
-    r = request(url, '/api/violations', token, params=params)
-    r.raise_for_status()
-    data = r.json()
+    data = {}
+    if violation_ids:
+        data['content'] = []
+        for violation_id in violation_ids.split(','):
+            r = request(url, '/api/violations/{}'.format(violation_id), token, params=params)
+            r.raise_for_status()
+            data['content'].append(r.json())
+    else:
+        r = request(url, '/api/violations', token, params=params)
+        r.raise_for_status()
+        data = r.json()
 
     for row in data['content']:
         if region and row['region'] != region:
