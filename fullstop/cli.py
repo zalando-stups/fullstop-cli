@@ -185,18 +185,28 @@ def format_meta_info(meta_info):
         return meta_info
     return yaml.safe_dump(meta_info).strip('{} \n').replace('\n', ', ')
 
+accounts_option = click.option('--accounts', metavar='ACCOUNT_IDS',
+                               help='AWS account IDs to filter for (default: your configured accounts)')
+since_option = click.option('-s', '--since', default='1d', metavar='TIME_SPEC',
+                            help='Only show violations newer than TIME_SPEC (24h, 30d, ..)')
+type_option = click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
+severity_option = click.option('--severity')
+region_option = click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
+meta_option = click.option('-m', '--meta', metavar='KEY=VAL', help='Filter by meta info (k1=v1,k2=v2,..)')
+remeta_option = click.option('-x', '--remeta', metavar='REGEX', help='Filter by meta info by regular expression')
+limit_option = click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
+
 
 @cli.command('list-violations')
 @output_option
-@click.option('--accounts', metavar='ACCOUNT_IDS',
-              help='AWS account IDs to filter for (default: your configured accounts)')
-@click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
-@click.option('--severity')
-@click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
-@click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
-@click.option('-m', '--meta', metavar='KEY=VAL', help='Filter by meta info (k1=v1,k2=v2,..)')
-@click.option('-x', '--remeta', metavar='REGEX', help='Filter by meta info by regular expression')
-@click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
+@accounts_option
+@since_option
+@type_option
+@severity_option
+@region_option
+@meta_option
+@remeta_option
+@limit_option
 @click.option('--all', is_flag=True, help='Show resolved violations too')
 @click.pass_obj
 def list_violations(config, output, since, region, meta, remeta, limit, all, **kwargs):
@@ -247,17 +257,16 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
 
 
 @cli.command('resolve-violations')
-@click.option('--accounts', metavar='ACCOUNT_IDS',
-              help='AWS account IDs to filter for (default: your configured accounts)')
-@click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
-@click.option('-i', '--violation-ids', metavar='VIOLATION_ID', help='resolve this specific violations, ' +
-                                                                    'multiple ID\'s comma seperated')
-@click.option('--severity')
-@click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
-@click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
-@click.option('-m', '--meta', metavar='KEY=VAL', help='Filter by meta info (k1=v1,k2=v2,..)')
-@click.option('-x', '--remeta', metavar='REGEX', help='Filter by meta info by regular expression')
-@click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
+@accounts_option
+@since_option
+@click.option('-i', '--violation-ids', metavar='VIOLATION_IDS', help='Resolve specific violations, ' +
+                                                                     'multiple ID\'s comma separated')
+@severity_option
+@type_option
+@region_option
+@meta_option
+@remeta_option
+@limit_option
 @click.argument('comment')
 @click.pass_obj
 def resolve_violations(config, comment, since, region, meta, remeta, limit, violation_ids, **kwargs):
