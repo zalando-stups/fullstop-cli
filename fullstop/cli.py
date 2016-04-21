@@ -250,7 +250,7 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
 @click.option('--accounts', metavar='ACCOUNT_IDS',
               help='AWS account IDs to filter for (default: your configured accounts)')
 @click.option('-s', '--since', default='1d', metavar='TIME_SPEC', help='Only show violations newer than')
-@click.option('-i', '--violation_ids', default='', metavar='VIOLATION_ID', help='resolve this specific violations, ' +
+@click.option('-i', '--violation-ids', default='', metavar='VIOLATION_ID', help='resolve this specific violations, ' +
                                                                                 'multiple ID\'s comma seperated')
 @click.option('--severity')
 @click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
@@ -277,7 +277,7 @@ def resolve_violations(config, comment, since, region, meta, remeta, limit, viol
     params['from'] = parse_since(since)
     params.update(kwargs)
     data = {}
-    if violation_ids != '' and violation_ids is not None:
+    if violation_ids:
         data['content'] = []
         for violation_id in violation_ids.split(','):
             violation_id = '/' + violation_id
