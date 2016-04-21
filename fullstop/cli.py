@@ -235,7 +235,14 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
     rows.reverse()
 
     with OutputFormat(output):
-        print_table(['account_id', 'region', 'id', 'violation_type', 'instance_id', 'meta_info', 'comment', 'created_time'],
+        print_table(['account_id',
+                     'region',
+                     'id',
+                     'violation_type',
+                     'instance_id',
+                     'meta_info',
+                     'comment',
+                     'created_time'],
                     rows, titles={'created_time': 'Created'})
 
 
