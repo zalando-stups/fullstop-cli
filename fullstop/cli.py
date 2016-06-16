@@ -222,15 +222,20 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
     params = {'size': limit, 'sort': 'id,DESC'}
     params['from'] = parse_since(since)
     params.update(kwargs)
+
     r = request(url, '/api/violations', token, params=params)
     r.raise_for_status()
-    data = r.json()
+    data = r.json()['content']
+
+    if (all):
+        params['checked'] = 'true'
+        r = request(url, '/api/violations', token, params=params)
+        r.raise_for_status()
+        data.extend(r.json()['content'])
 
     rows = []
-    for row in data['content']:
+    for row in data:
         if region and row['region'] != region:
-            continue
-        if row['comment'] and not all:
             continue
         if meta and not meta_matches(row['meta_info'], meta):
             continue
