@@ -282,8 +282,8 @@ def resolve_violations(config, comment, since, region, meta, remeta, limit, viol
 
     kwargs['accounts'] = kwargs.get('accounts') or config.get('accounts')
 
-    if not kwargs['accounts'] and not kwargs['type'] and not region:
-        raise click.UsageError('At least one of --accounts, --type or --region must be specified')
+    if all([not violation_ids, not kwargs['accounts'], not kwargs['type'], not region]):
+        raise click.UsageError('At least one of --accounts, --type, --region or --violation-ids must be specified')
 
     token = get_token()
 
@@ -313,7 +313,7 @@ def resolve_violations(config, comment, since, region, meta, remeta, limit, viol
             # already resolved, skip
             continue
         with Action('Resolving violation {}/{} {} {}..'.format(row['account_id'], row['region'],
-                    row['violation_type']['id'], row['id'])):
+                                                               row['violation_type']['id'], row['id'])):
             r = session.post(url + '/api/violations/{}/resolution'.format(row['id']), data=comment,
                              headers={'Authorization': 'Bearer {}'.format(token)})
             r.raise_for_status()
