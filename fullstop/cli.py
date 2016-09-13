@@ -183,6 +183,9 @@ def format_meta_info(meta_info):
         return ''
     if isinstance(meta_info, str):
         return meta_info
+    # remove application properties from meta_info, as they are now separate columns in the output table
+    meta_info.pop('application_id', None)
+    meta_info.pop('application_version', None)
     return yaml.safe_dump(meta_info).strip('{} \n').replace('\n', ', ')
 
 accounts_option = click.option('--accounts', metavar='ACCOUNT_IDS',
@@ -192,6 +195,9 @@ since_option = click.option('-s', '--since', default='1d', metavar='TIME_SPEC',
 type_option = click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
 severity_option = click.option('--severity')
 region_option = click.option('-r', '--region', metavar='AWS_REGION_ID', help='Filter by region')
+application_ids_option = click.option('--applications', metavar='APPLICATIONS', help='Filter by application ids')
+application_version_ids_option = click.option('--application-versions', metavar='APPLICATION_VERSIONS',
+                                              help='Filter by application version ids')
 meta_option = click.option('-m', '--meta', metavar='KEY=VAL', help='Filter by meta info (k1=v1,k2=v2,..)')
 remeta_option = click.option('-x', '--remeta', metavar='REGEX', help='Filter by meta info by regular expression')
 limit_option = click.option('-l', '--limit', metavar='N', help='Limit number of results', type=int, default=20)
@@ -204,6 +210,8 @@ limit_option = click.option('-l', '--limit', metavar='N', help='Limit number of 
 @type_option
 @severity_option
 @region_option
+@application_ids_option
+@application_version_ids_option
 @meta_option
 @remeta_option
 @limit_option
@@ -221,6 +229,8 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
 
     params = {'size': limit, 'sort': 'id,DESC'}
     params['from'] = parse_since(since)
+    params['application-ids'] = kwargs.get('applications')
+    params['application-version-ids'] = kwargs.get('application_versions')
     params.update(kwargs)
 
     r = request(url, '/api/violations', token, params=params)
@@ -255,10 +265,14 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
                      'id',
                      'violation_type',
                      'instance_id',
+                     'application_id',
+                     'application_version_id',
                      'meta_info',
                      'comment',
                      'created_time'],
-                    rows, titles={'created_time': 'Created'})
+                    rows, titles={'created_time': 'Created',
+                                  'application_id': 'Application',
+                                  'application_version_id': 'Application Version'})
 
 
 @cli.command('resolve-violations')
@@ -269,6 +283,8 @@ def list_violations(config, output, since, region, meta, remeta, limit, all, **k
 @severity_option
 @type_option
 @region_option
+@application_ids_option
+@application_version_ids_option
 @meta_option
 @remeta_option
 @limit_option
@@ -289,6 +305,8 @@ def resolve_violations(config, comment, since, region, meta, remeta, limit, viol
 
     params = {'size': limit, 'sort': 'id,DESC'}
     params['from'] = parse_since(since)
+    params['application-ids'] = kwargs.get('applications')
+    params['application-version-ids'] = kwargs.get('application_versions')
     params.update(kwargs)
     data = {}
     if violation_ids:
