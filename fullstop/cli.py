@@ -188,6 +188,7 @@ def format_meta_info(meta_info):
     meta_info.pop('application_version', None)
     return yaml.safe_dump(meta_info).strip('{} \n').replace('\n', ', ')
 
+
 accounts_option = click.option('--accounts', metavar='ACCOUNT_IDS',
                                help='AWS account IDs to filter for (default: your configured accounts)')
 since_option = click.option('-s', '--since', default='1d', metavar='TIME_SPEC',
