@@ -333,9 +333,9 @@ def resolve_violations(config, comment, since, region, meta, remeta, limit, viol
             continue
         try:
             with Action('Resolving violation {}/{} {} {}..'.format(row['account_id'], row['region'],
-                                                                row['violation_type']['id'], row['id'])):
+                                                                   row['violation_type']['id'], row['id'])):
                 r = session.post(url + '/api/violations/{}/resolution'.format(row['id']), data=comment,
-                                headers={'Authorization': 'Bearer {}'.format(token)})
+                                 headers={'Authorization': 'Bearer {}'.format(token)})
                 r.raise_for_status()
         except:
             # continue, error was printed by Action already
