@@ -331,11 +331,15 @@ def resolve_violations(config, comment, since, region, meta, remeta, limit, viol
         if row['comment']:
             # already resolved, skip
             continue
-        with Action('Resolving violation {}/{} {} {}..'.format(row['account_id'], row['region'],
-                                                               row['violation_type']['id'], row['id'])):
-            r = session.post(url + '/api/violations/{}/resolution'.format(row['id']), data=comment,
-                             headers={'Authorization': 'Bearer {}'.format(token)})
-            r.raise_for_status()
+        try:
+            with Action('Resolving violation {}/{} {} {}..'.format(row['account_id'], row['region'],
+                                                                   row['violation_type']['id'], row['id'])):
+                r = session.post(url + '/api/violations/{}/resolution'.format(row['id']), data=comment,
+                                 headers={'Authorization': 'Bearer {}'.format(token)})
+                r.raise_for_status()
+        except:
+            # continue, error was printed by Action already
+            pass
 
 
 def main():
