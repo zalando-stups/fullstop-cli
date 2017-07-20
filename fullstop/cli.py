@@ -183,9 +183,10 @@ def format_meta_info(meta_info):
         return ''
     if isinstance(meta_info, str):
         return meta_info
-    # remove application properties from meta_info, as they are now separate columns in the output table
-    meta_info.pop('application_id', None)
-    meta_info.pop('application_version', None)
+    if isinstance(meta_info, dict):
+        # remove application properties from meta_info, as they are now separate columns in the output table
+        meta_info.pop('application_id', None)
+        meta_info.pop('application_version', None)
     return yaml.safe_dump(meta_info).strip('{} \n').replace('\n', ', ')
 
 
