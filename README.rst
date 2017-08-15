@@ -31,10 +31,24 @@ Convenience command line tool for fullstop. audit reporting.
 Usage
 =====
 
+First configure your Fullstop CLI for your AWS account IDs:
+
 .. code-block:: bash
 
-    $ fullstop login
-    $ fullstop violations
+    $ fullstop configure
+    # enter Fullstop URL and optionally your AWS account IDs
+
+For example, you can list all recent violations in your configured AWS accounts:
+
+.. code-block:: bash
+
+    $ fullstop list-violations --since 7d -l 50
+    
+Check help text for all details    
+    
+.. code-block:: bash
+
+    $ fullstop list-violations --help
 
 You can also run it locally from source:
 
