@@ -58,7 +58,8 @@ def get_token():
 
 
 def parse_since(s):
-    return normalize_time(s, past=True).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    if s is not None:
+        return normalize_time(s, past=True).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 
 @cli.command('configure')
@@ -192,7 +193,7 @@ def format_meta_info(meta_info):
 
 accounts_option = click.option('--accounts', metavar='ACCOUNT_IDS',
                                help='AWS account IDs to filter for (default: your configured accounts)')
-since_option = click.option('-s', '--since', default='1d', metavar='TIME_SPEC',
+since_option = click.option('-s', '--since', metavar='TIME_SPEC',
                             help='Only show violations newer than TIME_SPEC (24h, 30d, ..)')
 type_option = click.option('-t', '--type', metavar='VIOLATION_TYPE', help='Only show violations of given type')
 severity_option = click.option('--severity')
